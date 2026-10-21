@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Trade Lab — จำลอง Lot × Points เป็น USD</title>
+
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel: #121927;
+      --input: #0b1220;
+      --border: #263249;
+      --text: #edf2fa;
+      --muted: #99a8be;
+      --gold: #f0ca7c;
+      --green: #69e4b5;
+      --red: #ff879b;
+      --radius: 22px;
+      --result: var(--green);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 8% 0%, #22304766, transparent 45%),
+        radial-gradient(ellipse at 100% 25%, #13352d44, transparent 42%),
+        var(--bg);
+      font-family: "Noto Sans Thai", Tahoma, system-ui, sans-serif;
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button, input, select { -webkit-tap-highlight-color: transparent; }
+
+    :focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 4px;
+    }
+
+    button:disabled { opacity: .4; cursor: not-allowed; }
+
+    .shell {
+      max-width: 1180px;
+      margin: auto;
+      padding: 34px 22px 42px;
+    }
+
+    .topbar, .brand, .panel-heading, .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .topbar { margin-bottom: 34px; }
+    .brand { justify-content: flex-start; gap: 13px; }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #f9dfa4, #c49a49);
+      color: #252013;
+      font-weight: 900;
+      letter-spacing: -1px;
+      box-shadow: 0 8px 28px #e5bf6320;
+    }
+
+    .brand-name { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+    .eyebrow { color: var(--muted); font-size: 11px; letter-spacing: 1.4px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px #69e4b555;
+    }
+
+    .intro { margin-bottom: 25px; }
+    .intro h1 { font-size: clamp(26px, 4vw, 38px); margin: 0 0 7px; }
+    .intro h1 span { color: var(--gold); }
+    .intro p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: linear-gradient(145deg, #151e2d, #101723);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      min-width: 0;
+      box-shadow: 0 16px 45px #00000020;
+    }
+
+    .panel-heading { margin-bottom: 23px; }
+    .panel-heading h2 { margin: 0; font-size: 17px; }
+    .step {
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 12px 14px;
+      min-height: 48px;
+    }
+
+    input:focus, select:focus { border-color: var(--gold); }
+    input[aria-invalid="true"] { border-color: var(--red); }
+
+    .field { margin-bottom: 20px; }
+    .input-wrap { position: relative; }
+
+    .big-input {
+      padding: 14px 74px 14px 16px;
+      font-size: 30px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.5px;
+    }
+
+    .unit {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .quick button, .button {
+      border: 1px solid var(--border);
+      background: #1b2536;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-size: 12px;
+      transition: border-color .15s, background .15s;
+    }
+
+    .quick button:hover, .button:hover { border-color: var(--gold); }
+
+    .quick button[aria-pressed="true"] {
+      color: var(--gold);
+      background: #f0ca7c12;
+      border-color: #f0ca7c66;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--input);
+    }
+
+    .segmented button {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 9px;
+      padding: 10px 8px;
+      font-size: 13px;
+    }
+
+    .segmented button[data-side="1"][aria-pressed="true"] {
+      color: var(--green);
+      background: #69e4b514;
+      border-color: #69e4b53b;
+    }
+
+    .segmented button[data-side="-1"][aria-pressed="true"] {
+      color: var(--red);
+      background: #ff879b14;
+      border-color: #ff879b3b;
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.8;
+      margin: 8px 0 0;
+    }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px 15px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--gold);
+      font-size: 13px;
+    }
+
+    .spec-fields { display: grid; gap: 14px; margin-top: 18px; }
+    .spec-fields label { margin-bottom: 5px; }
+    .spec-fields .help { margin-top: 4px; }
+
+    .error {
+      color: var(--red);
+      border: 1px solid #ff879b44;
+      background: #ff879b0b;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 14px;
+      font-size: 12px;
+    }
+
+    [hidden] { display: none !important; }
+
+    .result-panel {
+      position: relative;
+      overflow: hidden;
+      border-color: #395346;
+    }
+
+    [data-mode="loss"] { --result: var(--red); }
+    [data-mode="zero"] { --result: var(--muted); }
+
+    .result-label {
+      color: var(--result);
+      background: color-mix(in srgb, var(--result) 9%, transparent);
+      border: 1px solid color-mix(in srgb, var(--result) 28%, transparent);
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .hero { padding: 8px 0 23px; }
+
+    .amount {
+      display: block;
+      font-family: system-ui, sans-serif;
+      font-size: clamp(38px, 5vw, 66px);
+      font-weight: 750;
+      line-height: 1.2;
+      letter-spacing: -2px;
+      color: var(--result);
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+      margin: 7px 0 12px;
+    }
+
+    .amount.compact { font-size: clamp(28px, 3.5vw, 44px); }
+    .summary-line { color: var(--muted); font-size: 13px; margin: 0; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+      margin-bottom: 17px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #0b122080;
+      padding: 13px;
+      min-width: 0;
+    }
+
+    .metric span { display: block; color: var(--muted); font-size: 11px; }
+    .metric strong {
+      display: block;
+      margin-top: 5px;
+      font-family: system-ui, sans-serif;
+      font-size: 19px;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .formula {
+      background: #f0ca7c08;
+      border: 1px solid #f0ca7c25;
+      border-radius: 12px;
+      padding: 13px;
+    }
+
+    .formula small { display: block; color: var(--gold); margin-bottom: 6px; }
+    .formula code {
+      color: #dce3ef;
+      font-size: 12px;
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+    }
+
+    .target {
+      border-top: 1px solid var(--border);
+      margin-top: 21px;
+      padding-top: 19px;
+    }
+
+    .target h3 { font-size: 14px; margin: 0 0 12px; }
+    .target-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 15px;
+    }
+
+    .target-row input { padding-right: 55px; }
+    .target-output { min-width: 0; }
+    .target-output strong {
+      display: block;
+      font-size: 22px;
+      color: var(--gold);
+      overflow-wrap: anywhere;
+    }
+
+    .target-output span { color: var(--muted); font-size: 11px; }
+    .actions { margin-top: 20px; flex-wrap: wrap; }
+    .primary { background: var(--gold); color: #242012; border-color: var(--gold); }
+    .primary:hover { background: #ffe0a0; }
+    .status { color: var(--muted); font-size: 11px; min-height: 18px; }
+
+    .matrix { grid-column: 1 / -1; }
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      min-width: 540px;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    th, td {
+      padding: 15px 14px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      background: #0b122070;
+    }
+
+    th:first-child { text-align: left; }
+    tbody th { font-weight: 600; }
+    tbody tr:last-child > * { border-bottom: none; }
+    tbody tr:hover { background: #ffffff03; }
+
+    .selected-header { color: var(--gold); }
+    .selected-cell {
+      color: var(--result);
+      font-weight: 800;
+      background: color-mix(in srgb, var(--result) 9%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--result) 30%, transparent);
+      border-radius: 8px;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.9;
+      padding: 20px 3px 0;
+    }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .amount { font-size: clamp(42px, 10vw, 70px); }
+    }
+
+    @media (max-width: 520px) {
+      .shell { padding: 20px 13px 28px; }
+      .panel { padding: 20px 16px; border-radius: 18px; }
+      .topbar { align-items: flex-start; margin-bottom: 25px; }
+      .topbar > .badge { display: none; }
+      .split { grid-template-columns: 1fr; gap: 0; }
+      .panel-heading { gap: 10px; }
+      .result-label { font-size: 11px; }
+      .big-input { font-size: 32px; }
+      .target-row { gap: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">TL</div>
+        <div>
+          <div class="brand-name">TRADE LAB</div>
+          <div class="eyebrow">POINT-TO-PROFIT SIMULATOR</div>
+        </div>
+      </div>
+      <span class="badge">
+        <span class="dot" aria-hidden="true"></span>
+        คำนวณในเครื่อง · ไม่ส่งคำสั่งซื้อขาย
+      </span>
+    </header>
+
+    <div class="intro">
+      <h1>เปลี่ยนระยะ Points <span>ให้เป็น USD</span></h1>
+      <p>จำลองผลลัพธ์จากล็อตและระยะราคา โดยไม่หักค่าใช้จ่ายการเทรด</p>
+    </div>
+
+    <main class="layout">
+      <section class="panel" aria-labelledby="settingsTitle">
+        <div class="panel-heading">
+          <div>
+            <div class="step">01 / SETUP</div>
+            <h2 id="settingsTitle">ตั้งค่าการจำลอง</h2>
+          </div>
+          <button type="button" class="button" id="resetButton">
+            คืนค่าเริ่มต้น
+          </button>
+        </div>
+
+        <form id="simForm" novalidate>
+          <div class="field">
+            <label for="preset">ชุดสเปกตัวอย่าง</label>
+            <select id="preset">
+              <option value="gold2">XAUUSD · ตัวอย่าง 2 ตำแหน่ง</option>
+              <option value="gold3">XAUUSD · ตัวอย่าง 3 ตำแหน่ง</option>
+              <option value="eurusd">EURUSD · ตัวอย่าง 5 ตำแหน่ง</option>
+              <option value="custom">กำหนดสเปกเอง</option>
+            </select>
+            <p class="help">
+              เป็นชุดค่าสมมติสำหรับทดลอง ไม่ใช่สเปกของทุกโบรกเกอร์
+            </p>
+          </div>
+
+          <div class="split">
+            <div class="field">
+              <label for="lot">ขนาดล็อต</label>
+              <div class="input-wrap">
+                <input
+                  class="big-input"
+                  id="lot"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="0.01"
+                  inputmode="decimal"
+                >
+                <span class="unit">LOT</span>
+              </div>
+              <div class="quick" aria-label="เลือกล็อตอย่างรวดเร็ว">
+                <button type="button" data-field="lot" data-value="0.01">0.01</button>
+                <button type="button" data-field="lot" data-value="0.05">0.05</button>
+                <button type="button" data-field="lot" data-value="0.1">0.10</button>
+                <button type="button" data-field="lot" data-value="1">1.00</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="points">ระยะที่ราคาเคลื่อนที่</label>
+              <div class="input-wrap">
+                <input
+                  class="big-input"
+                  id="points"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="100"
+                  inputmode="decimal"
+                >
+                <span class="unit">POINTS</span>
+              </div>
+              <div class="quick" aria-label="เลือกระยะอย่างรวดเร็ว">
+                <button type="button" data-field="points" data-value="100">100</button>
+                <button type="button" data-field="points" data-value="300">300</button>
+                <button type="button" data-field="points" data-value="500">500</button>
+                <button type="button" data-field="points" data-value="1000">1,000</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="directionLabel">ทิศทางของระยะที่นำมาจำลอง</label>
+            <div class="segmented" role="group" aria-labelledby="directionLabel">
+              <button type="button" data-side="1" aria-pressed="true">
+                + ทางกำไร
+              </button>
+              <button type="button" data-side="-1" aria-pressed="false">
+                − ทางขาดทุน
+              </button>
+            </div>
+            <p class="help">
+              กรอกระยะเป็นค่าบวก แล้วเลือกว่าระยะนั้นเป็นกำไรหรือขาดทุน
+            </p>
+          </div>
+
+          <details>
+            <summary>ปรับสเปก Point / Tick ให้ตรงกับโบรกเกอร์</summary>
+            <div class="spec-fields">
+              <div>
+                <label for="pointSize">Point size · ค่าราคาของ 1 Point</label>
+                <input
+                  id="pointSize"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="0.01"
+                  inputmode="decimal"
+                >
+                <p class="help">
+                  เช่น 0.01 หมายถึง 100 Points เท่ากับระยะราคา 1.00
+                </p>
+              </div>
+
+              <div>
+                <label for="tickSize">Tick size · ระยะราคาของ 1 Tick</label>
+                <input
+                  id="tickSize"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="0.01"
+                  inputmode="decimal"
+                >
+                <p class="help">
+                  ขั้นการเปลี่ยนแปลงราคาขั้นต่ำตามสเปกสินทรัพย์
+                </p>
+              </div>
+
+              <div>
+                <label for="tickValue">Tick value · USD ต่อ 1 Tick ของ 1 lot</label>
+                <input
+                  id="tickValue"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="1"
+                  inputmode="decimal"
+                >
+                <p class="help">
+                  ต้องเป็นค่า USD ของ 1 lot ไม่ใช่ของล็อตที่กรอกด้านบน
+                  หากโบรกเกอร์แสดงสกุลเงินอื่น ให้แปลงเป็น USD ก่อน
+                </p>
+              </div>
+            </div>
+          </details>
+
+          <div id="errorBox" class="error" role="alert" hidden></div>
+          <p class="help" id="storageNote"></p>
+        </form>
+      </section>
+
+      <section
+        class="panel result-panel"
+        id="resultPanel"
+        data-mode="profit"
+        aria-labelledby="resultTitle"
+      >
+        <div class="panel-heading">
+          <div>
+            <div class="step">02 / RESULT</div>
+            <h2 id="resultTitle">ผลลัพธ์การจำลอง</h2>
+          </div>
+          <span class="result-label" id="resultLabel">กำไรโดยประมาณ</span>
+        </div>
+
+        <div class="hero">
+          <div class="eyebrow">ESTIMATED P/L · USD</div>
+          <output class="amount" id="pnl" aria-live="polite" aria-atomic="true">
+            +$1.00
+          </output>
+          <p class="summary-line" id="summaryLine">0.01 lot × 100 points</p>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <span>USD / Point ของล็อตนี้</span>
+            <strong id="perPointLot">$0.01</strong>
+          </div>
+          <div class="metric">
+            <span>USD / Point ของ 1 lot</span>
+            <strong id="perPointOne">$1.00</strong>
+          </div>
+          <div class="metric">
+            <span>ระยะราคา · หน่วยของสัญลักษณ์</span>
+            <strong id="priceDistance">1</strong>
+          </div>
+          <div class="metric">
+            <span>จำนวน Tick ตามสูตร</span>
+            <strong id="tickCount">100</strong>
+          </div>
+        </div>
+
+        <div class="formula">
+          <small>Lot × Points × (Point size ÷ Tick size) × Tick value × ทิศทาง</small>
+          <code id="formulaText">0.01 × 100 × (0.01 ÷ 0.01) × 1 × (+1)</code>
+        </div>
+
+        <p class="help" id="tickWarning" hidden></p>
+
+        <div class="target">
+          <h3>ย้อนกลับ: มูลค่า USD นี้ ต้องใช้กี่ Points?</h3>
+          <div class="target-row">
+            <div>
+              <label for="targetUSD">มูลค่ากำไรหรือขาดทุนที่ต้องการจำลอง</label>
+              <div class="input-wrap">
+                <input
+                  id="targetUSD"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="10"
+                  inputmode="decimal"
+                >
+                <span class="unit">USD</span>
+              </div>
+            </div>
+            <div class="target-output">
+              <strong id="targetPoints">≈ 1,000</strong>
+              <span>POINTS ของล็อตที่เลือก</span>
+            </div>
+          </div>
+          <p class="help" id="targetHelp">
+            ระยะเชิงทฤษฎี ไม่ปัดตาม Tick size และไม่หักค่าใช้จ่าย
+          </p>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="button primary" id="copyButton">
+            คัดลอกผลคำนวณ
+          </button>
+          <span class="status" id="copyStatus" role="status"></span>
+        </div>
+      </section>
+
+      <section
+        class="panel matrix"
+        id="matrixPanel"
+        data-mode="profit"
+        aria-labelledby="matrixTitle"
+      >
+        <div class="panel-heading">
+          <div>
+            <div class="step">03 / COMPARISON</div>
+            <h2 id="matrixTitle">เปรียบเทียบหลายล็อต × หลายระยะ</h2>
+            <p class="help">
+              ใช้สเปกและทิศทางเดียวกับด้านบน ช่องสีคือค่าที่คุณกำลังจำลอง
+            </p>
+          </div>
+          <span class="badge">หน่วย USD</span>
+        </div>
+
+        <div class="table-wrap">
+          <table aria-label="ตารางกำไรหรือขาดทุนตามล็อตและระยะพอยต์">
+            <thead id="matrixHead"></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      เครื่องมือนี้คำนวณจากสเปกที่กรอกเท่านั้น ไม่ใช่ราคาตลาดสด
+      และไม่หัก Spread, Commission หรือ Swap<br>
+      ใช้กับการคำนวณที่มูลค่าเปลี่ยนแปลงเป็นเส้นตรงตามระยะราคา
+      หาก Tick value เปลี่ยนตามราคา อัตราแลกเปลี่ยน หรือฝั่งกำไร/ขาดทุน
+      ต้องปรับค่านั้นให้เหมาะสม ผลที่ได้จึงเป็นค่าประมาณ
+      โดยระบบไม่ตรวจ Margin หรือข้อกำหนดล็อตของโบรกเกอร์
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = id => document.getElementById(id);
+      const STORAGE_KEY = "trade-lab-simulator-v1";
+
+      // ตัวอย่างสเปกเท่านั้น ไม่ใช่ข้อมูลสดจากโบรกเกอร์
+      // tickValue ทุกชุดเป็น USD ต่อ 1 tick ของ 1 lot
+      const PRESETS = {
+        gold2: {
+          pointSize: "0.01",
+          tickSize: "0.01",
+          tickValue: "1"
+        },
+        gold3: {
+          pointSize: "0.001",
+          tickSize: "0.001",
+          tickValue: "0.1"
+        },
+        eurusd: {
+          pointSize: "0.00001",
+          tickSize: "0.00001",
+          tickValue: "1"
+        }
+      };
+
+      const DEFAULTS = {
+        preset: "gold2",
+        lot: "0.01",
+        points: "100",
+        pointSize: "0.01",
+        tickSize: "0.01",
+        tickValue: "1",
+        targetUSD: "10",
+        side: 1
+      };
+
+      const fields = [
+        "lot", "points", "pointSize",
+        "tickSize", "tickValue", "targetUSD"
+      ];
+
+      const requiredFields = [
+        "lot", "points", "pointSize", "tickSize", "tickValue"
+      ];
+
+      const labels = {
+        lot: "Lot",
+        points: "Points",
+        pointSize: "Point size",
+        tickSize: "Tick size",
+        tickValue: "Tick value"
+      };
+
+      const currencyFormat = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6
+      });
+
+      const numberFormat = new Intl.NumberFormat("en-US", {
+        maximumFractionDigits: 8
+      });
+
+      let side = 1;
+      let lastCalculation = null;
+      let statusTimer;
+
+      function numberText(value) {
+        if (!Number.isFinite(value)) return "—";
+        if (value !== 0 && Math.abs(value) < 0.00000001) {
+          return value.toExponential(3);
+        }
+        return numberFormat.format(value);
+      }
+
+      function usd(value, showPlus = false) {
+        if (!Number.isFinite(value)) return "—";
+
+        const absolute = Math.abs(value);
+        const body = absolute > 0 && absolute < 0.000001
+          ? "$" + absolute.toExponential(3)
+          : currencyFormat.format(absolute);
+
+        const sign = value < 0 ? "−" : showPlus && value > 0 ? "+" : "";
+        return sign + body;
+      }
+
+      function readNumber(id) {
+        const raw = $(id).value.trim();
+        return raw === "" ? NaN : Number(raw);
+      }
+
+      function applyState(state) {
+        fields.forEach(id => {
+          const value = state[id] ?? DEFAULTS[id];
+          $(id).value = (
+            typeof value === "string" || typeof value === "number"
+          ) ? String(value) : DEFAULTS[id];
+        });
+
+        const preset = state.preset ?? DEFAULTS.preset;
+        $("preset").value = Object.hasOwn(PRESETS, preset)
+          ? preset
+          : "custom";
+
+        side = Number(state.side) === -1 ? -1 : 1;
+      }
+
+      function saveState() {
+        const state = {
+          preset: $("preset").value,
+          side
+        };
+
+        fields.forEach(id => state[id] = $(id).value);
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          $("storageNote").textContent =
+            "จำการตั้งค่าไว้ในเบราว์เซอร์นี้อัตโนมัติ";
+        } catch {
+          $("storageNote").textContent =
+            "เบราว์เซอร์ไม่อนุญาตให้บันทึกค่า แต่ยังคำนวณได้ตามปกติ";
+        }
+      }
+
+      function updateButtons() {
+        document.querySelectorAll("[data-side]").forEach(button => {
+          button.setAttribute(
+            "aria-pressed",
+            String(Number(button.dataset.side) === side)
+          );
+        });
+
+        document.querySelectorAll("[data-field]").forEach(button => {
+          button.setAttribute(
+            "aria-pressed",
+            String(
+              readNumber(button.dataset.field) ===
+              Number(button.dataset.value)
+            )
+          );
+        });
+      }
+
+      function clearResults(message) {
+        lastCalculation = null;
+        $("errorBox").textContent = message;
+        $("errorBox").hidden = false;
+        $("resultPanel").dataset.mode = "zero";
+        $("matrixPanel").dataset.mode = "zero";
+        $("resultLabel").textContent = "ตรวจสอบค่าที่กรอก";
+
+        [
+          "pnl", "perPointLot", "perPointOne",
+          "priceDistance", "tickCount", "targetPoints"
+        ].forEach(id => $(id).textContent = "—");
+
+        $("summaryLine").textContent = "กรอกข้อมูลให้ครบเพื่อเริ่มคำนวณ";
+        $("formulaText").textContent = "รอข้อมูลที่ถูกต้อง";
+        $("targetHelp").textContent = "ต้องมีสเปกและล็อตที่ถูกต้องก่อน";
+        $("tickWarning").hidden = true;
+        $("copyButton").disabled = true;
+        $("matrixHead").replaceChildren();
+        $("matrixBody").replaceChildren();
+      }
+
+      function renderMatrix(values, perPointOne) {
+        const pointOptions = [...new Set([
+          100, 500, 1000, values.points
+        ])].sort((a, b) => a - b);
+
+        const lotOptions = [...new Set([
+          0.01, 0.05, 0.1, 1, values.lot
+        ])].sort((a, b) => a - b);
+
+        const headRow = document.createElement("tr");
+        const firstHead = document.createElement("th");
+        firstHead.scope = "col";
+        firstHead.textContent = "LOT / POINTS";
+        headRow.append(firstHead);
+
+        pointOptions.forEach(points => {
+          const th = document.createElement("th");
+          th.scope = "col";
+          th.textContent = numberText(points) + " pts";
+
+          if (points === values.points) {
+            th.classList.add("selected-header");
+          }
+
+          headRow.append(th);
+        });
+
+        $("matrixHead").replaceChildren(headRow);
+
+        const fragment = document.createDocumentFragment();
+
+        lotOptions.forEach(lot => {
+          const row = document.createElement("tr");
+          const rowHead = document.createElement("th");
+          rowHead.scope = "row";
+          rowHead.textContent = numberText(lot) + " lot";
+
+          if (lot === values.lot) {
+            rowHead.classList.add("selected-header");
+          }
+
+          row.append(rowHead);
+
+          pointOptions.forEach(points => {
+            const cell = document.createElement("td");
+            const pnl = lot * points * perPointOne * side;
+            cell.textContent = usd(pnl, true);
+
+            if (lot === values.lot && points === values.points) {
+              cell.classList.add("selected-cell");
+              cell.setAttribute("aria-label", "ค่าที่เลือก " + cell.textContent);
+            }
+
+            row.append(cell);
+          });
+
+          fragment.append(row);
+        });
+
+        $("matrixBody").replaceChildren(fragment);
+      }
+
+      function updateTarget(perPointLot) {
+        const target = readNumber("targetUSD");
+        const valid = Number.isFinite(target) && target >= 0;
+
+        $("targetUSD").setAttribute("aria-invalid", String(!valid));
+
+        if (!valid) {
+          $("targetPoints").textContent = "—";
+          $("targetHelp").textContent =
+            "กรอกมูลค่าเป้าหมายเป็นตัวเลขศูนย์หรือมากกว่า";
+          return;
+        }
+
+        const neededPoints = target / perPointLot;
+
+        if (!Number.isFinite(neededPoints)) {
+          $("targetPoints").textContent = "—";
+          $("targetHelp").textContent = "ค่าเกินช่วงที่ระบบสามารถคำนวณได้";
+          return;
+        }
+
+        $("targetPoints").textContent = "≈ " + numberText(neededPoints);
+        $("targetHelp").textContent =
+          "ระยะเชิงทฤษฎี ไม่ปัดตาม Tick size และไม่หักค่าใช้จ่าย";
+      }
+
+      function render() {
+        updateButtons();
+
+        const values = {};
+        const errors = [];
+
+        requiredFields.forEach(id => {
+          const value = readNumber(id);
+          values[id] = value;
+
+          const valid = Number.isFinite(value) &&
+            (id === "points" ? value >= 0 : value > 0);
+
+          $(id).setAttribute("aria-invalid", String(!valid));
+
+          if (!valid) {
+            errors.push(
+              labels[id] +
+              (id === "points"
+                ? " ต้องเป็นศูนย์หรือมากกว่า"
+                : " ต้องมากกว่าศูนย์")
+            );
+          }
+        });
+
+        if (errors.length) {
+          clearResults(errors.join(" · "));
+          saveState();
+          return;
+        }
+
+        /*
+          USD ต่อ point ของ 1 lot
+            = (Point size / Tick size) × Tick value
+
+          P/L
+            = Lot × Points × USD ต่อ point ของ 1 lot × ทิศทาง
+        */
+        const perPointOne =
+          (values.pointSize / values.tickSize) * values.tickValue;
+
+        const perPointLot = values.lot * perPointOne;
+        const priceDistance = values.points * values.pointSize;
+        const ticks = priceDistance / values.tickSize;
+        const pnl = values.points * perPointLot * side;
+
+        const calculated = [
+          perPointOne, perPointLot, priceDistance, ticks, pnl
+        ];
+
+        if (
+          !calculated.every(Number.isFinite) ||
+          perPointOne <= 0 ||
+          perPointLot <= 0
+        ) {
+          clearResults("ค่ามากหรือน้อยเกินช่วงคำนวณ กรุณาปรับข้อมูล");
+          saveState();
+          return;
+        }
+
+        $("errorBox").hidden = true;
+        $("copyButton").disabled = false;
+
+        const mode = pnl === 0 ? "zero" : side === 1 ? "profit" : "loss";
+        $("resultPanel").dataset.mode = mode;
+        $("matrixPanel").dataset.mode = mode;
+
+        $("resultLabel").textContent =
+          pnl === 0
+            ? "ไม่มีการเปลี่ยนแปลง"
+            : side === 1
+              ? "กำไรโดยประมาณ"
+              : "ขาดทุนโดยประมาณ";
+
+        const pnlText = usd(pnl, true);
+        $("pnl").textContent = pnlText;
+        $("pnl").classList.toggle("compact", pnlText.length > 14);
+
+        $("summaryLine").textContent =
+          `${numberText(values.lot)} lot × ` +
+          `${numberText(values.points)} points`;
+
+        $("perPointLot").textContent = usd(perPointLot);
+        $("perPointOne").textContent = usd(perPointOne);
+        $("priceDistance").textContent = numberText(priceDistance);
+        $("tickCount").textContent = numberText(ticks);
+
+        $("formulaText").textContent =
+          `${numberText(values.lot)} × ${numberText(values.points)} × ` +
+          `(${numberText(values.pointSize)} ÷ ${numberText(values.tickSize)}) × ` +
+          `${numberText(values.tickValue)} × (${side === 1 ? "+1" : "−1"})`;
+
+        // แจ้งเมื่อระยะที่กรอกไม่ตรงขั้นราคาของ Tick size
+        const tolerance = Math.max(
+          1e-8,
+          Math.abs(ticks) * Number.EPSILON * 8
+        );
+
+        const alignedToTick =
+          Math.abs(ticks - Math.round(ticks)) <= tolerance;
+
+        $("tickWarning").hidden = alignedToTick;
+        $("tickWarning").textContent =
+          "หมายเหตุ: ระยะนี้ไม่ตรงขั้น Tick size ที่ตั้งไว้ " +
+          "ระบบแสดงค่าเชิงคณิตศาสตร์โดยไม่ปัดระยะ";
+
+        updateTarget(perPointLot);
+        renderMatrix(values, perPointOne);
+
+        lastCalculation = {
+          ...values,
+          side,
+          perPointOne,
+          perPointLot,
+          priceDistance,
+          ticks,
+          pnl
+        };
+
+        saveState();
+      }
+
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch {
+            // ลองวิธีสำรองสำหรับบางเบราว์เซอร์หรือไฟล์ local
+          }
+        }
+
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+
+        const previousFocus = document.activeElement;
+        document.body.append(area);
+        area.select();
+
+        let success = false;
+        try {
+          success = document.execCommand("copy");
+        } finally {
+          area.remove();
+          if (previousFocus && previousFocus.focus) {
+            previousFocus.focus();
+          }
+        }
+
+        if (!success) throw new Error("Clipboard unavailable");
+      }
+
+      fields.forEach(id => {
+        $(id).addEventListener("input", () => {
+          if (["pointSize", "tickSize", "tickValue"].includes(id)) {
+            $("preset").value = "custom";
+          }
+          $("copyStatus").textContent = "";
+          render();
+        });
+      });
+
+      $("preset").addEventListener("change", () => {
+        const preset = PRESETS[$("preset").value];
+
+        if (preset) {
+          Object.entries(preset).forEach(([id, value]) => {
+            $(id).value = value;
+          });
+        }
+
+        $("copyStatus").textContent = "";
+        render();
+      });
+
+      document.querySelectorAll("[data-field]").forEach(button => {
+        button.addEventListener("click", () => {
+          $(button.dataset.field).value = button.dataset.value;
+          $("copyStatus").textContent = "";
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-side]").forEach(button => {
+        button.addEventListener("click", () => {
+          side = Number(button.dataset.side);
+          $("copyStatus").textContent = "";
+          render();
+        });
+      });
+
+      $("simForm").addEventListener("submit", event => {
+        event.preventDefault();
+        render();
+      });
+
+      $("resetButton").addEventListener("click", () => {
+        applyState(DEFAULTS);
+        $("copyStatus").textContent = "";
+        render();
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        if (!lastCalculation) return;
+
+        const c = lastCalculation;
+        const text = [
+          "TRADE LAB — ผลจำลอง Lot × Points",
+          `ทิศทาง: ${c.side === 1 ? "ทางกำไร" : "ทางขาดทุน"}`,
+          `Lot: ${numberText(c.lot)}`,
+          `ระยะ: ${numberText(c.points)} points`,
+          `Point size: ${numberText(c.pointSize)}`,
+          `Tick size: ${numberText(c.tickSize)}`,
+          `Tick value: ${usd(c.tickValue)} ต่อ tick ของ 1 lot`,
+          `USD / point ของล็อตนี้: ${usd(c.perPointLot)}`,
+          `กำไร/ขาดทุนโดยประมาณ: ${usd(c.pnl, true)} USD`,
+          "ไม่หัก Spread, Commission หรือ Swap",
+          "คำนวณตามสเปกที่กรอก ไม่ใช่ข้อมูลราคาตลาดสด"
+        ].join("\n");
+
+        clearTimeout(statusTimer);
+
+        try {
+          await copyText(text);
+          $("copyStatus").textContent = "คัดลอกผลคำนวณแล้ว";
+        } catch {
+          $("copyStatus").textContent =
+            "คัดลอกอัตโนมัติไม่ได้ กรุณาเลือกข้อความผลลัพธ์แล้วคัดลอก";
+        }
+
+        statusTimer = setTimeout(() => {
+          $("copyStatus").textContent = "";
+        }, 4500);
+      });
+
+      // โหลดการตั้งค่าครั้งล่าสุด
+      let initialState = DEFAULTS;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+        if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+          initialState = { ...DEFAULTS, ...saved };
+        }
+      } catch {
+        // หากเข้าถึง storage ไม่ได้ ให้ใช้ค่าเริ่มต้น
+      }
+
+      applyState(initialState);
+      render();
+    })();
+  </script>
+</body>
+  </html>
